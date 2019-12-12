@@ -1,6 +1,8 @@
 #!/bin/bash
 
 g++ n2puzzle.cpp -o main
-./main <test1.txt
-./main <test2.txt
-./main <test3.txt
+time ./main <test1.txt
+echo 
+time ./main <test2.txt
+echo
+time ./main <test3.txt
