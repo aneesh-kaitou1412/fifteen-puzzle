@@ -1,8 +1,10 @@
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <cmath>
 #include <queue>
-#include <vector>
 #include <string>
+#include <unordered_map>
 
 using namespace std;
 
@@ -13,18 +15,17 @@ using namespace std;
 
 int N = 4;
 int N2 = 16;
+int D = 2;
 
-struct node
-{
-	int * arr;
-	int zpos;
-	int g;
-	int h;
-	node * parent;
-};
+// maps a gridstring(state) to tuple of (g, h, zpos, reference to parent gridstring, reference to self gridstring)
+unordered_map<string, tuple<int, int, int, string*, string*>> MAP;
+
+// priority queue of pair (f, reference to gridstring)
+priority_queue<pair<int, string*>> PRQ;
 
 // Counts number of inversions in the array
-int inversionsort(int* arr, int start, int end)
+// think carefully, only needed once
+int inversion_sort(int* arr, int start, int end)
 {
 	// for(int i=start;i<end;i++)
 	// 	cout<<arr[i]<<" ";
@@ -42,8 +43,8 @@ int inversionsort(int* arr, int start, int end)
 	{
 		int mid = (start + end) / 2;
 		
-		int inv1 = inversionsort(arr, start, mid);
-		int inv2 = inversionsort(arr, mid, end);
+		int inv1 = inversion_sort(arr, start, mid);
+		int inv2 = inversion_sort(arr, mid, end);
 
 		int inv3 = 0;
 		int idx1 = start;
@@ -91,9 +92,9 @@ int inversionsort(int* arr, int start, int end)
 
 // check if current configuration is solvable
 // think carefully, only needed once
-int isSolvable(int * temparr, int zpos)
+int is_solvable(int * temparr, int zpos)
 {
-	int inv = inversionsort(temparr, 0, N2)-zpos;
+	int inv = inversion_sort(temparr, 0, N2)-zpos;
 	
 	// prints("Inversions");
 	// println(inv);
@@ -121,22 +122,44 @@ int isSolvable(int * temparr, int zpos)
 }
 
 // calculates Manhatten distance for the configuration
-int Manhatten(int * arr)
+int manhatten(string s)
 {
 	int res = 0;
-	for(int i=0; i<N2; i++)
+	for(int i=0, j=0; i<N2*D && j<N2; i+=D, j++)
 	{
-		if(arr[i]!=0)
+		int num = stoi(s.substr(i,D));
+		if(num!=0)
 		{
-			res += abs(row(i,N)-row(arr[i]-1,N)) + abs(col(i,N)-col(arr[i]-1,N));
+			res += abs(row(j,N)-row(num-1,N)) + abs(col(j,N)-col(num-1,N));
 		}
 	}
+	// prints("Manhatten distance");
 	// println(res);
 	return res;
 }
 
+// helper to convert int to padded string
+string int_to_padded_str(int num) {
+  ostringstream out;
+  out << std::setfill('0') << std::setw(D) << num;
+  return out.str();
+}
+
+// convert array to gridstring
+string array_to_string(int * arr)
+{
+	string s = "";
+	for(int i=0; i<N2; i++)
+	{
+		s += int_to_padded_str(arr[i]);
+	}
+	// prints("Grid String");
+	// println(s);
+	return s;
+}
+
 // given old pos and new pos find the move direction
-string findmove(int oldpos, int newpos)
+string find_move(int oldpos, int newpos)
 {
 	int UD = row(newpos,N)-row(oldpos,N);
 	int LR = col(newpos,N)-col(oldpos,N);
@@ -166,10 +189,21 @@ string findmove(int oldpos, int newpos)
 
 int main()
 {
+	// initialize size of grid and max digits that could be in a number in the grid
 	int n;
 	cin>>n;
 	N = n;
 	N2 = n*n;
+	D = 0;
+	int k = N2;
+	while(k>0)
+	{
+		k/=10;
+		D++;
+	}
+
+	// initialize array to take in the grid numbers,
+	// temparr for inversion counting, initial position of space
 	int * arr = new int[N2];
 	int * temparr = new int[N2];
 	int zpos;
@@ -185,7 +219,7 @@ int main()
 		temparr[i]=arr[i];
 	}
 
-	if(isSolvable(temparr,zpos) == -1)
+	if(is_solvable(temparr,zpos) == -1)
 	{
 		cout<<"Not Solvable\n";
 		return -1;
@@ -194,67 +228,60 @@ int main()
 	{
 		cout<<"Solvable\n";
 		
-		// SOLVING PROCESS
+		// SOLVING PROCESS :
+		// variable for the end node
+		string * finstate = NULL;
+
 		// initialize start node
-		node * start = new node;
-		start->parent = NULL;
-		start->g = 0;
-		start->arr = arr;
-		start->h = -Manhatten(arr);
-		start->zpos = zpos;
+		string none = "NONE";
+		string * start = new string;
+		*start = array_to_string(arr);
+		MAP[*start] = make_tuple(0, manhatten(*start), zpos, &none, start);
 
 		// initialize priority queue and insert start node
-		priority_queue<pair<int, node*>> Q;
-		Q.emplace(start->g+start->h, start);
+		PRQ.emplace(-get<0>(MAP[*start])-get<1>(MAP[*start]), start);
 
-		node * finnode = NULL;
-		
-		int dir[4][2] = {{1,0}, {-1,0}, {0,1}, {0,-1}};
 		// while queue not empty
-		while(!Q.empty())
+		while(!PRQ.empty())
 		{
 			// 	pick min element from queue
-			node * curnode = Q.top().second;
-			Q.pop();
+			string * curstate = PRQ.top().second;
+			PRQ.pop();
+			int curgval, curzpos, curhval;
+			tie(curgval, curhval, curzpos, ignore, ignore) = MAP[*curstate];
 
-			if(curnode->h == 0)
+			// if the goal state is reached then break
+			if(curhval == 0)
 			{
-				finnode = curnode;
+				finstate = curstate;
 				break;
 			}
 
-			int xx = row(curnode->zpos, N);
-			int yy = col(curnode->zpos, N);
 			// 	in all directions, check if cost decreases
-			for(int i=0; i<4; i++)
-			{
-				int newxx = xx + dir[i][0];
-				int newyy = yy + dir[i][1];
-				if(newxx < 0 || newyy < 0)
-				{
-					continue;
-				}
-			}
 			//		if it decreases, then update the node
 			//		insert new pointer and value pair in queue	
 		}
-
-		// decoding from the current node
-		if(finnode == NULL)
+		
+		// decoding from the final state
+		if(finstate == NULL)
 		{
 			return -1;
 		}
 		else
 		{
 			vector<string> moves;
-			while(finnode->parent!=NULL)
+			
+			// while parent of current state is not none
+			while(*get<3>(MAP[*finstate])!="NONE")
 			{
-				int curpos = finnode->zpos;
-				finnode = finnode->parent;
-				int prevpos = finnode->zpos;
-				moves.push_back(findmove(prevpos, curpos));
+				int curpos = get<2>(MAP[*finstate]);
+				finstate = get<3>(MAP[*finstate]);
+				int prevpos = get<2>(MAP[*finstate]);
+				// add the move from parent to current
+				moves.push_back(find_move(prevpos, curpos));
 			}
 
+			// print the moves
 			prints("Number of Moves");
 			println(moves.size());
 			for(int i=moves.size()-1;i>=0;i--)
