@@ -153,8 +153,8 @@ string array_to_string(int * arr)
 	{
 		s += int_to_padded_str(arr[i]);
 	}
-	// prints("Grid String");
-	// println(s);
+	prints("Grid String");
+	println(s);
 	return s;
 }
 
@@ -165,11 +165,11 @@ string find_move(int oldpos, int newpos)
 	int LR = col(newpos,N)-col(oldpos,N);
 	if(UD==1 && LR==0)
 	{
-		return "U";
+		return "D";
 	}
 	else if(UD==-1 && LR==0)
 	{
-		return "D";
+		return "U";
 	}
 	else if(UD==0 && LR==1)
 	{
@@ -183,6 +183,82 @@ string find_move(int oldpos, int newpos)
 	{
 		return "incorrect move";
 	}
+}
+
+// complete a star updation function
+void check_direction(string * state, int dir)
+{
+	// get gval and zpos
+	int gval, zpos;
+	tie(gval, ignore, zpos, ignore, ignore) = MAP[*state];
+	// based on dir, get new zpos, if invalid return
+	int xx, yy;
+	switch(dir)
+	{
+		// left
+		case 0:
+			xx = row(zpos,N);
+			yy = col(zpos,N)-1;
+			break;
+		// right
+		case 1:
+			xx = row(zpos,N);
+			yy = col(zpos,N)+1;
+			break;
+		// up
+		case 2:
+			xx = row(zpos,N)-1;
+			yy = col(zpos,N);
+			break;
+		// down
+		case 3:
+			xx = row(zpos,N)+1;
+			yy = col(zpos,N);
+			break;
+		default:
+			return;
+	}
+
+	// prints(row(zpos,N));
+	// println(col(zpos,N));
+	// prints(xx);
+	// println(yy);
+
+	if(xx<0 || xx>=N || yy<0 || yy>=N)
+	{
+		return;
+	}
+	int newzpos = xx*N + yy;
+
+	// get gridstate of the new zpos
+	string s1 = (*state).substr(zpos, D);
+	string s2 = (*state).substr(newzpos, D);
+	string newstate = *state;
+	newstate.replace(zpos,D,s2);
+	newstate.replace(newzpos,D,s1);
+
+	// if newstate already present in map then 
+	// no need to allocate new array for state
+	// just check and update
+	string * parent = NULL;
+	int oldgval;
+	tie(oldgval, ignore, ignore, parent, ignore) = MAP[newstate];
+	if(parent==NULL)
+	{
+		string * s = new string;
+		*s = newstate;
+		MAP[*s] = make_tuple(gval+1, manhatten(*s), newzpos, state, s);
+		PRQ.emplace(-get<0>(MAP[*s])-get<1>(MAP[*s]), s);
+	}
+	else
+	{
+		if(gval+1 < oldgval)
+		{
+			get<0>(MAP[newstate]) = gval+1;
+			get<3>(MAP[newstate]) = state;
+		}
+	}
+	return;
 }
 
 
@@ -247,8 +323,7 @@ int main()
 			// 	pick min element from queue
 			string * curstate = PRQ.top().second;
 			PRQ.pop();
-			int curgval, curzpos, curhval;
-			tie(curgval, curhval, curzpos, ignore, ignore) = MAP[*curstate];
+			int curhval = get<1>(MAP[*curstate]);
 
 			// if the goal state is reached then break
 			if(curhval == 0)
@@ -256,10 +331,14 @@ int main()
 				finstate = curstate;
 				break;
 			}
-
-			// 	in all directions, check if cost decreases
-			//		if it decreases, then update the node
-			//		insert new pointer and value pair in queue	
+			// 	in all directions, check if gval of child decreases by moving through curnode
+			for(int i=0; i<4; i++)
+			{
+				// if it decreases, then update that node
+				// insert new pointer and value pair in queue	
+				// single function to do so
+				check_direction(curstate, i);
+			}
 		}
 		
 		// decoding from the final state
@@ -290,4 +369,9 @@ int main()
 			}
 		}
 	}
+
+	for(auto& x: MAP)
+	{
+		delete get<4>(x.second);
+    }
 }
