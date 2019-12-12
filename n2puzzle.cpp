@@ -1,10 +1,13 @@
 #include <iostream>
 #include <cmath>
+#include <queue>
 
 using namespace std;
 
-#define row(i,N) i/N
-#define col(i,N) i%N
+#define row(i,N) (i)/(N)
+#define col(i,N) (i)%(N)
+#define println(x) cout<<(x)<<"\n";
+#define prints(x) cout<<(x)<<" ";
 
 int N = 4;
 int N2 = 16;
@@ -89,23 +92,26 @@ int inversionsort(int* arr, int start, int end)
 int isSolvable(int * temparr, int zpos)
 {
 	int inv = inversionsort(temparr, 0, N2)-zpos;
-	cout<<"Inversions "<<inv<<"\n";
-	cout<<"Pos "<<row(zpos,N)<<" "<<col(zpos,N)<<"\n";
+	
+	// prints("Inversions");
+	// println(inv);
+	
+	// prints("Pos");
+	// prints(row(zpos,N));
+	// println(col(zpos,N));
+	
 	if(N%2 == 1 && inv%2 == 0)
 	{
-		cout<<"A\n";
 		return 1;
 	}
 	if(N%2 == 0)
 	{
 		if((N-row(zpos, N))%2 == 0 && inv%2 == 1)
 		{
-			cout<<"B\n";
 			return 1;
 		}
 		if((N-row(zpos, N))%2 == 1 && inv%2 == 0)
 		{
-			cout<<"C\n";
 			return 1;
 		}
 	}
@@ -118,11 +124,12 @@ int Manhatten(int * arr)
 	int res = 0;
 	for(int i=0; i<N2; i++)
 	{
-		if(arr[i]!=N2)
+		if(arr[i]!=0)
 		{
-			res += abs(row(i,N)-row(arr[i],N)) + abs(col(i,N)-col(arr[i],N));
+			res += abs(row(i,N)-row(arr[i]-1,N)) + abs(col(i,N)-col(arr[i]-1,N));
 		}
 	}
+	println(res);
 	return res;
 }
 
@@ -151,16 +158,25 @@ int main()
 
 	if(isSolvable(temparr,zpos) == -1)
 	{
-		cout<<"not solvable\n";
+		cout<<"Not Solvable\n";
 		return -1;
 	}
 	else
 	{
-		cout<<"solvable\n";
-		node * start = new node;
+		cout<<"Solvable\n";
+		
 		// SOLVING PROCESS
 		// initialize start node
+		node * start = new node;
+		start->parent = NULL;
+		start->g = 0;
+		start->arr = arr;
+		start->h = -Manhatten(arr);
+		start->zpos = zpos;
+
 		// initialize priority queue and insert start node
+		priority_queue<pair<int, node*>> Q;
+		Q.emplace(start->g+start->h, start);
 		// while queue not empty
 		// 	pick min element from queue
 		// 	in all directions, check if cost decreases
