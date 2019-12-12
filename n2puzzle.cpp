@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -109,7 +110,15 @@ int isSolvable(int * temparr, int zpos)
 // calculates Manhatten distance for the configuration
 int Manhatten(int * arr)
 {
-	
+	int res = 0;
+	for(int i=0; i<N2; i++)
+	{
+		if(arr[i]!=N2)
+		{
+			res += abs(row(i,N)-row(arr[i],N)) + abs(col(i,N)-col(arr[i],N));
+		}
+	}
+	return res;
 }
 
 
@@ -123,6 +132,7 @@ int main()
 	int * arr = new int[N2];
 	int * temparr = new int[N2];
 	int zpos;
+
 	// get the input
 	for(int i=0;i<N2;i++)
 	{
@@ -133,5 +143,14 @@ int main()
 			zpos=i;
 		}
 		temparr[i]=arr[i];
+	}
+
+	if(isSolvable(temparr,zpos) == -1)
+	{
+		return -1;
+	}
+	else
+	{
+		cout<<"solvable\n";
 	}
 }
