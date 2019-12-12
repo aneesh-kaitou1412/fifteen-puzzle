@@ -231,12 +231,15 @@ void check_direction(string * state, int dir)
 	int newzpos = xx*N + yy;
 
 	// get gridstate of the new zpos
-	string s1 = (*state).substr(zpos, D);
-	string s2 = (*state).substr(newzpos, D);
+	string s1 = (*state).substr(zpos*D, D);
+	string s2 = (*state).substr(newzpos*D, D);
 	string newstate = *state;
 	newstate.replace(zpos,D,s2);
 	newstate.replace(newzpos,D,s1);
 
+	// println(*state);
+	// println(newstate);
+	
 	// if newstate already present in map then 
 	// no need to allocate new array for state
 	// just check and update
