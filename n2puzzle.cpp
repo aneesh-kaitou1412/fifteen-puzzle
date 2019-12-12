@@ -209,6 +209,7 @@ int main()
 
 		node * finnode = NULL;
 		
+		int dir[4][2] = {{1,0}, {-1,0}, {0,1}, {0,-1}};
 		// while queue not empty
 		while(!Q.empty())
 		{
@@ -221,7 +222,19 @@ int main()
 				finnode = curnode;
 				break;
 			}
+
+			int xx = row(curnode->zpos, N);
+			int yy = col(curnode->zpos, N);
 			// 	in all directions, check if cost decreases
+			for(int i=0; i<4; i++)
+			{
+				int newxx = xx + dir[i][0];
+				int newyy = yy + dir[i][1];
+				if(newxx < 0 || newyy < 0)
+				{
+					continue;
+				}
+			}
 			//		if it decreases, then update the node
 			//		insert new pointer and value pair in queue	
 		}
