@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cmath>
 #include <queue>
+#include <vector>
+#include <string>
 
 using namespace std;
 
@@ -129,8 +131,35 @@ int Manhatten(int * arr)
 			res += abs(row(i,N)-row(arr[i]-1,N)) + abs(col(i,N)-col(arr[i]-1,N));
 		}
 	}
-	println(res);
+	// println(res);
 	return res;
+}
+
+// given old pos and new pos find the move direction
+string findmove(int oldpos, int newpos)
+{
+	int UD = row(newpos,N)-row(oldpos,N);
+	int LR = col(newpos,N)-col(oldpos,N);
+	if(UD==1 && LR==0)
+	{
+		return "U";
+	}
+	else if(UD==-1 && LR==0)
+	{
+		return "D";
+	}
+	else if(UD==0 && LR==1)
+	{
+		return "R";
+	}
+	else if(UD==0 && LR==-1)
+	{
+		return "L";
+	}
+	else
+	{
+		return "incorrect move";
+	}
 }
 
 
@@ -177,10 +206,48 @@ int main()
 		// initialize priority queue and insert start node
 		priority_queue<pair<int, node*>> Q;
 		Q.emplace(start->g+start->h, start);
+
+		node * finnode = NULL;
+		
 		// while queue not empty
-		// 	pick min element from queue
-		// 	in all directions, check if cost decreases
-		//		if it decreases, then update the node
-		//		insert new pointer and value pair in queue
+		while(!Q.empty())
+		{
+			// 	pick min element from queue
+			node * curnode = Q.top().second;
+			Q.pop();
+
+			if(curnode->h == 0)
+			{
+				finnode = curnode;
+				break;
+			}
+			// 	in all directions, check if cost decreases
+			//		if it decreases, then update the node
+			//		insert new pointer and value pair in queue	
+		}
+
+		// decoding from the current node
+		if(finnode == NULL)
+		{
+			return -1;
+		}
+		else
+		{
+			vector<string> moves;
+			while(finnode->parent!=NULL)
+			{
+				int curpos = finnode->zpos;
+				finnode = finnode->parent;
+				int prevpos = finnode->zpos;
+				moves.push_back(findmove(prevpos, curpos));
+			}
+
+			prints("Number of Moves");
+			println(moves.size());
+			for(int i=moves.size()-1;i>=0;i--)
+			{
+				prints(moves[i]);
+			}
+		}
 	}
 }
