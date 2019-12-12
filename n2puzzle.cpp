@@ -88,19 +88,24 @@ int inversionsort(int* arr, int start, int end)
 // think carefully, only needed once
 int isSolvable(int * temparr, int zpos)
 {
-	int inv = inversionsort(temparr, 0, N2);
+	int inv = inversionsort(temparr, 0, N2)-zpos;
+	cout<<"Inversions "<<inv<<"\n";
+	cout<<"Pos "<<row(zpos,N)<<" "<<col(zpos,N)<<"\n";
 	if(N%2 == 1 && inv%2 == 0)
 	{
+		cout<<"A\n";
 		return 1;
 	}
 	if(N%2 == 0)
 	{
 		if((N-row(zpos, N))%2 == 0 && inv%2 == 1)
 		{
+			cout<<"B\n";
 			return 1;
 		}
 		if((N-row(zpos, N))%2 == 1 && inv%2 == 0)
 		{
+			cout<<"C\n";
 			return 1;
 		}
 	}
@@ -139,7 +144,6 @@ int main()
 		cin>>arr[i];
 		if(arr[i]==0)
 		{
-			arr[i]=N2;
 			zpos=i;
 		}
 		temparr[i]=arr[i];
@@ -147,10 +151,20 @@ int main()
 
 	if(isSolvable(temparr,zpos) == -1)
 	{
+		cout<<"not solvable\n";
 		return -1;
 	}
 	else
 	{
 		cout<<"solvable\n";
+		node * start = new node;
+		// SOLVING PROCESS
+		// initialize start node
+		// initialize priority queue and insert start node
+		// while queue not empty
+		// 	pick min element from queue
+		// 	in all directions, check if cost decreases
+		//		if it decreases, then update the node
+		//		insert new pointer and value pair in queue
 	}
 }
