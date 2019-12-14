@@ -17,8 +17,18 @@ int N = 4;
 int N2 = 16;
 int D = 2;
 
-// maps a gridstring(state) to tuple of (g, h, zpos, reference to parent gridstring, reference to self gridstring, move that led to this state)
-unordered_map<string, tuple<int, int, int, string*, string*, int>> MAP;
+struct node
+{
+	string* config;
+	int g;
+	int h;
+	string* parent;
+	int zpos;
+	short move; // move that led to this state
+};
+
+// maps grid string to its node structure
+unordered_map<string, node*> MAP;
 
 // priority queue of pair (f, reference to gridstring)
 priority_queue<pair<int, string*>> PRQ;
@@ -139,10 +149,11 @@ int manhatten(string s)
 }
 
 // helper to convert int to padded string
-string int_to_padded_str(int num) {
-  ostringstream out;
-  out << std::setfill('0') << std::setw(D) << num;
-  return out.str();
+string int_to_padded_str(int num) 
+{
+	ostringstream out;
+	out << std::setfill('0') << std::setw(D) << num;
+	return out.str();
 }
 
 // convert array to gridstring
@@ -153,48 +164,45 @@ string array_to_string(int * arr)
 	{
 		s += int_to_padded_str(arr[i]);
 	}
-	prints("Grid String");
-	println(s);
+	// prints("Grid String");
+	// println(s);
 	return s;
 }
 
-// given old pos and new pos find the move direction
-string find_move(int oldpos, int newpos)
+// Print move letter given number
+void find_move(int move)
 {
-	int UD = row(newpos,N)-row(oldpos,N);
-	int LR = col(newpos,N)-col(oldpos,N);
-	if(UD==1 && LR==0)
+	switch(move)
 	{
-		return "D";
-	}
-	else if(UD==-1 && LR==0)
-	{
-		return "U";
-	}
-	else if(UD==0 && LR==1)
-	{
-		return "R";
-	}
-	else if(UD==0 && LR==-1)
-	{
-		return "L";
-	}
-	else
-	{
-		return "incorrect move";
+		case 0:
+			cout<<"L ";
+			return;
+		case 3:
+			cout<<"R ";
+			return;
+		case 2:
+			cout<<"U ";
+			return;
+		case 1:
+			cout<<"D ";
+			return;
+		default:
+			return;
 	}
 }
 
-// complete a star updation function
+// complete A* updation function
 void check_direction(string * state, int dir)
 {
-	// get gval and zpos
-	int gval, zpos, dirprev;
-	tie(gval, ignore, zpos, ignore, ignore, dirprev) = MAP[*state];
-	if(dirprev + dir == 3)
+	// get the node of current state
+	node * curnode = MAP[*state];
+	int zpos = curnode->zpos;
+
+	if(curnode->move + dir == 3)
 	{
 		return;
 	}
+
 	// based on dir, get new zpos, if invalid return
 	int xx, yy;
 	switch(dir)
@@ -235,36 +243,45 @@ void check_direction(string * state, int dir)
 	int newzpos = xx*N + yy;
 
 	// get gridstate of the new zpos
-	string s1 = (*state).substr(zpos*D, D);
-	string s2 = (*state).substr(newzpos*D, D);
 	string newstate = *state;
-	newstate.replace(zpos*D,D,s2);
-	newstate.replace(newzpos*D,D,s1);
+	for(int i=0;i<D;i++)
+	{
+		char temp = newstate[zpos*D + i];
+		newstate[zpos*D + i] = newstate[newzpos*D + i];
+		newstate[newzpos*D + i] = temp;
+	}
 
+	// println("-----------------------------------------------------");
 	// println(*state);
 	// println(newstate);
-	
+	// println("-----------------------------------------------------");
+
 	// if newstate already present in map then 
 	// no need to allocate new array for state
 	// just check and update
-	string * parent = NULL;
-	int oldgval;
-	tie(oldgval, ignore, ignore, parent, ignore, ignore) = MAP[newstate];
-	if(parent==NULL)
+	node * checknode = MAP[newstate];
+	if(checknode==NULL)
 	{
 		string * s = new string;
 		*s = newstate;
-		MAP[*s] = make_tuple(gval+1, manhatten(*s), newzpos, state, s, dir);
-		PRQ.emplace(-get<0>(MAP[*s])-get<1>(MAP[*s]), s);
+		node * n = new node;
+		n->config = s;
+		n->g = curnode->g + 1;
+		n->h = manhatten(*s);
+		n->parent = state;
+		n->move = dir;
+		n->zpos = newzpos;
+		MAP[*s] = n;
+		PRQ.emplace(- n->g - n->h, s);
 	}
 	else
 	{
-		if(gval+1 < oldgval)
+		if(curnode->g + 1 < checknode->g + 1)
 		{
-			get<0>(MAP[newstate]) = gval+1;
-			get<3>(MAP[newstate]) = state;
-			get<5>(MAP[newstate]) = dir;
-			PRQ.emplace(-get<0>(MAP[newstate])-get<1>(MAP[newstate]), get<4>(MAP[newstate]));
+			MAP[newstate]->g = curnode->g + 1;
+			MAP[newstate]->parent = state;
+			MAP[newstate]->move = dir;
+			PRQ.emplace(- MAP[newstate]->g - MAP[newstate]->h, MAP[newstate]->config);
 		}
 	}
 	return;
@@ -306,12 +323,12 @@ int main()
 
 	if(is_solvable(temparr,zpos) == -1)
 	{
-		cout<<"Not Solvable\n";
+		// cout<<"Not Solvable\n";
 		return -1;
 	}
 	else
 	{
-		cout<<"Solvable\n";
+		// cout<<"Solvable\n";
 		
 		// SOLVING PROCESS :
 		// variable for the end node
@@ -321,10 +338,17 @@ int main()
 		string none = "NONE";
 		string * start = new string;
 		*start = array_to_string(arr);
-		MAP[*start] = make_tuple(0, manhatten(*start), zpos, &none, start, -1);
+		node * fnode = new node;
+		fnode->g = 0;
+		fnode->h = manhatten(*start);
+		fnode->parent = &none;
+		fnode->move = -1;
+		fnode->zpos = zpos;
+		fnode->config = start;
+		MAP[*start] = fnode;
 
 		// initialize priority queue and insert start node
-		PRQ.emplace(-get<0>(MAP[*start])-get<1>(MAP[*start]), start);
+		PRQ.emplace(-MAP[*start]->g - MAP[*start]->h, start);
 
 		// while queue not empty
 		while(!PRQ.empty())
@@ -332,7 +356,7 @@ int main()
 			// 	pick min element from queue
 			string * curstate = PRQ.top().second;
 			PRQ.pop();
-			int curhval = get<1>(MAP[*curstate]);
+			int curhval = MAP[*curstate]->h;
 
 			// if the goal state is reached then break
 			if(curhval == 0)
@@ -357,30 +381,30 @@ int main()
 		}
 		else
 		{
-			vector<string> moves;
-			
+			vector<int> moves;
 			// while parent of current state is not none
-			while(*get<3>(MAP[*finstate])!="NONE")
+			while(MAP[*finstate]->move!=-1)
 			{
-				int curpos = get<2>(MAP[*finstate]);
-				finstate = get<3>(MAP[*finstate]);
-				int prevpos = get<2>(MAP[*finstate]);
 				// add the move from parent to current
-				moves.push_back(find_move(prevpos, curpos));
+				moves.push_back(MAP[*finstate]->move);
+				// backtrace pointer to parent
+				finstate = MAP[*finstate]->parent;
 			}
-
+			
 			// print the moves
-			prints("Number of Moves");
-			println(moves.size());
+			// prints("Number of Moves");
+			// println(moves.size());
 			for(int i=moves.size()-1;i>=0;i--)
 			{
-				prints(moves[i]);
+				find_move(moves[i]);
 			}
+			println(" ");
 		}
 	}
 
-	for(auto& x: MAP)
-	{
-		delete get<4>(x.second);
-    }
+	// for(auto& x: MAP)
+	// {
+	// 	delete x.second->config;
+	// 	delete x.second;
+ 	// }
 }
